@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מחשבון מאקרו יומי</title>
+    <style>
+        body { font-family: sans-serif; padding: 15px; background: #fafafa; }
+        .container { max-width: 450px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        h2 { text-align: center; color: #333; margin-top: 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        select, input[type="number"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1.1em; }
+        
+        .entry-section { display: flex; flex-direction: column; gap: 15px; }
+        .unit-display { font-style: italic; color: #666; margin-top: -10px; }
+        
+        button { border: none; border-radius: 6px; padding: 12px 20px; cursor: pointer; font-size: 1em; font-weight: bold; width: 100%; margin-top: 10px; transition: background 0.2s; }
+        button.add-btn { background: #4caf50; color: white; }
+        button.add-btn:hover { background: #45a049; }
+        button.reset-btn { background: #f44336; color: white; font-size: 0.9em; margin-top: 30px;}
+        button.reset-btn:hover { background: #d32f2f; }
+
+        .totals { display: flex; justify-content: space-around; text-align: center; margin-top: 20px; padding-top: 15px; border-top: 2px solid #eaeaea; }
+        .total-box { flex: 1; }
+        .total-box .value { font-size: 2em; font-weight: bold; }
+        .total-box .label { font-size: 1em; color: #777; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>הוספת פריט לתפריט היומי</h2>
+        <div class="entry-section">
+            <div>
+                <label for="food-select">בחר פריט</label>
+                <select id="food-select" onchange="updateUnit()">
+                    <option value="" disabled selected>-- בחר --</option>
+                </select>
+            </div>
+            
+            <div id="unit-container" style="display: none;">
+                <label>יחידת מידה</label>
+                <div class="unit-display" id="item-unit"></div>
+            </div>
+
+            <div>
+                <label for="quantity">כמות (מספרים שלמים בלבד)</label>
+                <input type="number" id="quantity" placeholder="1, 2, 3..." min="1" step="1">
+            </div>
+
+            <button class="add-btn" onclick="addItem()">הוסף פריט</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>סיכום יומי</h2>
+        <div class="totals">
+            <div class="total-box">
+                <div class="value" id="total-cals">0</div>
+                <div class="label">קלוריות</div>
+            </div>
+            <div class="total-box">
+                <div class="value" id="total-protein">0</div>
+                <div class="label">גרם חלבון</div>
+            </div>
+        </div>
+        <button class="reset-btn" onclick="resetDay()">איפוס יום</button>
+    </div>
+</div>
+
+<script>
+    // --- הנתונים שלך ---
+    const menuItems = [
+        { name: "גבינה צהובה 9 אחוז עמק לייט", unit: "פרוסה", cal: 50, pro: 7.5 },
+        { name: "מלפפון עגבניה גזר פלפל אדום", unit: "סלט", cal: 100, pro: 0 },
+        { name: "טחינה מלאה אחווה", unit: "כפית", cal: 127, pro: 4.5 },
+        { name: "בשר או דג", unit: "100 גרם", cal: 200, pro: 22 },
+        { name: "בטטה", unit: "100 גרם", cal: 100, pro: 3 },
+        { name: "ביצים", unit: "ביצה", cal: 80, pro: 6 },
+        { name: "שעועית ירוקה", unit: "100 גרם", cal: 30, pro: 2 },
+        { name: "פירות יער קפואים", unit: "100 גרם", cal: 50, pro: 0 },
+        { name: "לחם פרו אנג׳ל", unit: "פרוסה", cal: 70, pro: 7 }
+    ];
+
+    // --- State/Variables ---
+    let dailyTotals = { cals: 0, pro: 0 };
+    const selectElem = document.getElementById('food-select');
+    const unitContainer = document.getElementById('unit-container');
+    const unitElem = document.getElementById('item-unit');
+    const qtyElem = document.getElementById('quantity');
+    const totalCalsElem = document.getElementById('total-cals');
+    const totalProElem = document.getElementById('total-protein');
+
+    // --- Initialization: Populate Dropdown ---
+    function populateDropdown() {
+        menuItems.forEach((item, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = item.name;
+            selectElem.appendChild(option);
+        });
+    }
+
+    // --- Interaction: Update Unit Display ---
+    function updateUnit() {
+        const selectedIndex = selectElem.value;
+        if (selectedIndex !== "") {
+            const item = menuItems[selectedIndex];
+            unitElem.textContent = item.unit;
+            unitContainer.style.display = 'block';
+            qtyElem.focus();
+        } else {
+            unitContainer.style.display = 'none';
+        }
+    }
+
+    // --- Interaction: Add Item Logic ---
+    function addItem() {
+        const selectedIndex = selectElem.value;
+        const qty = parseInt(qtyElem.value);
+
+        if (selectedIndex === "" || isNaN(qty) || qty <= 0) {
+            alert("אנא בחר פריט והזן כמות תקינה.");
+            return;
+        }
+
+        const item = menuItems[selectedIndex];
+
+        // Calculation: (item values per unit) * quantity
+        dailyTotals.cals += item.cal * qty;
+        dailyTotals.pro += item.pro * qty;
+
+        updateDisplay();
+        clearEntryForm();
+    }
+
+    // --- Update UI ---
+    function updateDisplay() {
+        totalCalsElem.textContent = Math.round(dailyTotals.cals);
+        totalProElem.textContent = Math.round(dailyTotals.pro);
+    }
+
+    // --- Clear Entry Form ---
+    function clearEntryForm() {
+        selectElem.value = "";
+        qtyElem.value = "";
+        unitContainer.style.display = 'none';
+    }
+
+    // --- Reset ---
+    function resetDay() {
+        if (confirm("האם אתה בטוח שברצונך לאפס את הנתונים היומיים?")) {
+            dailyTotals = { cals: 0, pro: 0 };
+            updateDisplay();
+            clearEntryForm();
+        }
+    }
+
+    // Run on startup
+    populateDropdown();
+</script>
+
+</body>
+</html>
