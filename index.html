@@ -2,56 +2,67 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>מחשבון מאקרו יומי</title>
     <style>
-        body { font-family: sans-serif; padding: 15px; background: #fafafa; }
+        body { font-family: -apple-system, sans-serif; padding: 15px; background: #fafafa; margin-bottom: 50px; }
         .container { max-width: 450px; margin: auto; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        h2 { text-align: center; color: #333; margin-top: 0; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
-        select, input[type="number"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1.1em; }
+        h2 { text-align: center; color: #333; margin-top: 0; font-size: 1.2em; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; font-size: 0.9em; }
+        select, input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; -webkit-appearance: none; }
         
-        .entry-section { display: flex; flex-direction: column; gap: 15px; }
-        .unit-display { font-style: italic; color: #666; margin-top: -10px; }
+        .manual-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .unit-display { font-style: italic; color: #666; margin-bottom: 10px; display: block; font-size: 0.9em; }
         
-        button { border: none; border-radius: 6px; padding: 12px 20px; cursor: pointer; font-size: 1em; font-weight: bold; width: 100%; margin-top: 10px; transition: background 0.2s; }
-        button.add-btn { background: #4caf50; color: white; }
-        button.add-btn:hover { background: #45a049; }
-        button.reset-btn { background: #f44336; color: white; font-size: 0.9em; margin-top: 30px;}
-        button.reset-btn:hover { background: #d32f2f; }
+        button { border: none; border-radius: 6px; padding: 12px; cursor: pointer; font-size: 1em; font-weight: bold; width: 100%; transition: opacity 0.2s; }
+        .add-btn { background: #4caf50; color: white; }
+        .manual-btn { background: #2196F3; color: white; margin-top: 5px; }
+        .reset-btn { background: #f44336; color: white; font-size: 0.9em; margin-top: 25px;}
 
-        .totals { display: flex; justify-content: space-around; text-align: center; margin-top: 20px; padding-top: 15px; border-top: 2px solid #eaeaea; }
-        .total-box { flex: 1; }
-        .total-box .value { font-size: 2em; font-weight: bold; }
-        .total-box .label { font-size: 1em; color: #777; margin-top: 5px; }
+        .totals { display: flex; justify-content: space-around; text-align: center; margin-top: 10px; padding-top: 15px; border-top: 2px solid #eaeaea; }
+        .total-box .value { font-size: 1.8em; font-weight: bold; color: #333; }
+        .total-box .label { font-size: 0.9em; color: #777; }
+
+        .log-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .log-item:last-child { border-bottom: none; }
+        .delete-btn { color: #f44336; font-weight: bold; padding: 5px 12px; cursor: pointer; border: 1px solid #f44336; border-radius: 6px; font-size: 0.8em; }
+        .log-details { font-size: 0.9em; line-height: 1.4; }
+        .log-name { font-weight: bold; display: block; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="card">
-        <h2>הוספת פריט לתפריט היומי</h2>
-        <div class="entry-section">
+        <h2>הוספה ידנית</h2>
+        <input type="text" id="manual-name" placeholder="שם המאכל (אופציונלי)">
+        <div class="manual-grid">
             <div>
-                <label for="food-select">בחר פריט</label>
-                <select id="food-select" onchange="updateUnit()">
-                    <option value="" disabled selected>-- בחר --</option>
-                </select>
+                <label>קלוריות</label>
+                <input type="number" id="manual-cal" placeholder="0" inputmode="numeric">
             </div>
-            
-            <div id="unit-container" style="display: none;">
-                <label>יחידת מידה</label>
-                <div class="unit-display" id="item-unit"></div>
-            </div>
-
             <div>
-                <label for="quantity">כמות (מספרים שלמים בלבד)</label>
-                <input type="number" id="quantity" placeholder="1, 2, 3..." min="1" step="1">
+                <label>חלבון</label>
+                <input type="number" id="manual-pro" placeholder="0" inputmode="decimal">
             </div>
-
-            <button class="add-btn" onclick="addItem()">הוסף פריט</button>
+            <div>
+                <label>כמות</label>
+                <input type="number" id="manual-qty" value="1" inputmode="numeric">
+            </div>
         </div>
+        <button class="manual-btn" onclick="addManual()">הוסף לסכום</button>
+    </div>
+
+    <div class="card">
+        <h2>בחירה מהתפריט</h2>
+        <select id="food-select" onchange="updateUnit()">
+            <option value="" disabled selected>-- בחר פריט מהרשימה --</option>
+        </select>
+        <span id="unit-tag" class="unit-display" style="display:none;"></span>
+        <label>כמות</label>
+        <input type="number" id="quantity" placeholder="1" min="1" inputmode="numeric">
+        <button class="add-btn" onclick="addItem()">הוסף מהרשימה</button>
     </div>
 
     <div class="card">
@@ -63,16 +74,20 @@
             </div>
             <div class="total-box">
                 <div class="value" id="total-protein">0</div>
-                <div class="label">גרם חלבון</div>
+                <div class="label">חלבון (ג')</div>
             </div>
         </div>
-        <button class="reset-btn" onclick="resetDay()">איפוס יום</button>
+        
+        <h3 style="margin-top:25px; font-size:1.1em; border-bottom: 2px solid #eee; padding-bottom: 5px;">פירוט ארוחות:</h3>
+        <div id="log-container"></div>
+
+        <button class="reset-btn" onclick="resetDay()">איפוס כל הנתונים</button>
     </div>
 </div>
 
 <script>
     const menuItems = [
-        { name: "גבינה צהובה 9 אחוז עמק לייט", unit: "פרוסה", cal: 50, pro: 7.5 },
+        { name: "גבינה צהובה 9% עמק לייט", unit: "פרוסה", cal: 50, pro: 7.5 },
         { name: "מלפפון עגבניה גזר פלפל אדום", unit: "סלט", cal: 100, pro: 0 },
         { name: "טחינה מלאה אחווה", unit: "כפית", cal: 127, pro: 4.5 },
         { name: "בשר או דג", unit: "100 גרם", cal: 200, pro: 22 },
@@ -80,18 +95,20 @@
         { name: "ביצים", unit: "ביצה", cal: 80, pro: 6 },
         { name: "שעועית ירוקה", unit: "100 גרם", cal: 30, pro: 2 },
         { name: "פירות יער קפואים", unit: "100 גרם", cal: 50, pro: 0 },
-        { name: "לחם פרו אנג׳ל", unit: "פרוסה", cal: 70, pro: 7 }
+        { name: "לחם פרו אנג׳ל", unit: "פרוסה", cal: 70, pro: 7 },
+        { name: "תפוח עץ", unit: "יחידה", cal: 100, pro: 0 },
+        { name: "ציפס חלבון", unit: "שקית", cal: 140, pro: 20 },
+        { name: "ציזבורגר מקדונלדס", unit: "יחידה", cal: 379, pro: 27 },
+        { name: "ציפס מקדונלדס", unit: "מנה", cal: 294, pro: 0 }
     ];
 
-    // Load data from localStorage on startup
-    let dailyTotals = JSON.parse(localStorage.getItem('dailyMacros')) || { cals: 0, pro: 0 };
+    // טעינת הנתונים מהזיכרון
+    let state = JSON.parse(localStorage.getItem('macroStateV2')) || { entries: [] };
 
     const selectElem = document.getElementById('food-select');
-    const unitContainer = document.getElementById('unit-container');
-    const unitElem = document.getElementById('item-unit');
+    const unitTag = document.getElementById('unit-tag');
     const qtyElem = document.getElementById('quantity');
-    const totalCalsElem = document.getElementById('total-cals');
-    const totalProElem = document.getElementById('total-protein');
+    const logContainer = document.getElementById('log-container');
 
     function populateDropdown() {
         menuItems.forEach((item, index) => {
@@ -100,59 +117,96 @@
             option.textContent = item.name;
             selectElem.appendChild(option);
         });
-        updateDisplay(); // Show saved data immediately
+        render();
     }
 
     function updateUnit() {
-        const selectedIndex = selectElem.value;
-        if (selectedIndex !== "") {
-            const item = menuItems[selectedIndex];
-            unitElem.textContent = item.unit;
-            unitContainer.style.display = 'block';
-            qtyElem.focus();
-        } else {
-            unitContainer.style.display = 'none';
+        const item = menuItems[selectElem.value];
+        if (item) {
+            unitTag.textContent = "יחידת מידה: " + item.unit;
+            unitTag.style.display = 'block';
         }
     }
 
     function addItem() {
-        const selectedIndex = selectElem.value;
-        const qty = parseInt(qtyElem.value);
+        const idx = selectElem.value;
+        const qty = parseFloat(qtyElem.value) || 1;
+        if (idx === "") return;
 
-        if (selectedIndex === "" || isNaN(qty) || qty <= 0) {
-            alert("אנא בחר פריט והזן כמות תקינה.");
-            return;
-        }
-
-        const item = menuItems[selectedIndex];
-
-        dailyTotals.cals += item.cal * qty;
-        dailyTotals.pro += item.pro * qty;
-
-        // Save to localStorage
-        localStorage.setItem('dailyMacros', JSON.stringify(dailyTotals));
-
-        updateDisplay();
-        clearEntryForm();
-    }
-
-    function updateDisplay() {
-        totalCalsElem.textContent = Math.round(dailyTotals.cals);
-        totalProElem.textContent = dailyTotals.pro % 1 === 0 ? dailyTotals.pro : dailyTotals.pro.toFixed(1);
-    }
-
-    function clearEntryForm() {
-        selectElem.value = "";
+        const item = menuItems[idx];
+        addEntry(item.name, item.cal * qty, item.pro * qty, qty);
+        
         qtyElem.value = "";
-        unitContainer.style.display = 'none';
+        selectElem.value = "";
+        unitTag.style.display = 'none';
+    }
+
+    function addManual() {
+        const name = document.getElementById('manual-name').value || "מאכל כללי";
+        const cal = parseFloat(document.getElementById('manual-cal').value) || 0;
+        const pro = parseFloat(document.getElementById('manual-pro').value) || 0;
+        const qty = parseFloat(document.getElementById('manual-qty').value) || 1;
+
+        addEntry(name, cal * qty, pro * qty, qty);
+
+        document.getElementById('manual-name').value = "";
+        document.getElementById('manual-cal').value = "";
+        document.getElementById('manual-pro').value = "";
+    }
+
+    function addEntry(name, totalCal, totalPro, qty) {
+        state.entries.push({
+            id: Date.now(),
+            name: name,
+            cal: totalCal,
+            pro: totalPro,
+            qty: qty
+        });
+        saveAndRender();
+    }
+
+    function deleteEntry(id) {
+        state.entries = state.entries.filter(e => e.id !== id);
+        saveAndRender();
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('macroStateV2', JSON.stringify(state));
+        render();
+    }
+
+    function render() {
+        let totalCals = 0;
+        let totalPro = 0;
+        logContainer.innerHTML = "";
+
+        // מיון הרשימה מהחדש לישן
+        const reversedEntries = [...state.entries].reverse();
+
+        reversedEntries.forEach(entry => {
+            totalCals += entry.cal;
+            totalPro += entry.pro;
+
+            const div = document.createElement('div');
+            div.className = 'log-item';
+            div.innerHTML = `
+                <div class="log-details">
+                    <span class="log-name">${entry.name} (x${entry.qty})</span>
+                    <small>${Math.round(entry.cal)} קלוריות | ${entry.pro.toFixed(1)} חלבון</small>
+                </div>
+                <div class="delete-btn" onclick="deleteEntry(${entry.id})">מחק</div>
+            `;
+            logContainer.appendChild(div);
+        });
+
+        document.getElementById('total-cals').textContent = Math.round(totalCals);
+        document.getElementById('total-protein').textContent = totalPro.toFixed(1);
     }
 
     function resetDay() {
-        if (confirm("האם אתה בטוח שברצונך לאפס את הנתונים היומיים?")) {
-            dailyTotals = { cals: 0, pro: 0 };
-            localStorage.removeItem('dailyMacros');
-            updateDisplay();
-            clearEntryForm();
+        if (confirm("לאפס את כל הרשימה והסכומים להיום?")) {
+            state.entries = [];
+            saveAndRender();
         }
     }
 
