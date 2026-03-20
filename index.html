@@ -12,7 +12,7 @@
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; font-size: 0.9em; }
         select, input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; -webkit-appearance: none; }
         
-        .manual-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .manual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .unit-display { font-style: italic; color: #666; margin-bottom: 10px; display: block; font-size: 0.9em; }
         
         button { border: none; border-radius: 6px; padding: 12px; cursor: pointer; font-size: 1em; font-weight: bold; width: 100%; transition: opacity 0.2s; }
@@ -23,6 +23,10 @@
         .totals { display: flex; justify-content: space-around; text-align: center; margin-top: 10px; padding-top: 15px; border-top: 2px solid #eaeaea; }
         .total-box .value { font-size: 1.8em; font-weight: bold; color: #333; }
         .total-box .label { font-size: 0.9em; color: #777; }
+
+        .macro-calc { background: #f0f7ff; padding: 15px; border-radius: 8px; margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; border: 1px solid #d1e3f8; }
+        .macro-stat { font-size: 0.85em; color: #444; }
+        .macro-val { font-weight: bold; color: #2196F3; display: block; font-size: 1.1em; }
 
         .log-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
         .log-item:last-child { border-bottom: none; }
@@ -35,26 +39,6 @@
 
 <div class="container">
     <div class="card">
-        <h2>הוספה ידנית</h2>
-        <input type="text" id="manual-name" placeholder="שם המאכל (אופציונלי)">
-        <div class="manual-grid">
-            <div>
-                <label>קלוריות</label>
-                <input type="number" id="manual-cal" placeholder="0" inputmode="numeric">
-            </div>
-            <div>
-                <label>חלבון</label>
-                <input type="number" id="manual-pro" placeholder="0" inputmode="decimal">
-            </div>
-            <div>
-                <label>כמות</label>
-                <input type="number" id="manual-qty" value="1" inputmode="numeric">
-            </div>
-        </div>
-        <button class="manual-btn" onclick="addManual()">הוסף לסכום</button>
-    </div>
-
-    <div class="card">
         <h2>בחירה מהתפריט</h2>
         <select id="food-select" onchange="updateUnit()">
             <option value="" disabled selected>-- בחר פריט מהרשימה --</option>
@@ -63,6 +47,22 @@
         <label>כמות</label>
         <input type="number" id="quantity" placeholder="1" min="1" inputmode="numeric">
         <button class="add-btn" onclick="addItem()">הוסף מהרשימה</button>
+    </div>
+
+    <div class="card">
+        <h2>הוספה ידנית (מאכל זר)</h2>
+        <input type="text" id="manual-name" placeholder="שם המאכל">
+        <div class="manual-grid">
+            <div>
+                <label>קלוריות</label>
+                <input type="number" id="manual-cal" placeholder="0" inputmode="numeric">
+            </div>
+            <div>
+                <label>חלבון (ג')</label>
+                <input type="number" id="manual-pro" placeholder="0" inputmode="decimal">
+            </div>
+        </div>
+        <button class="manual-btn" onclick="addManual()">הוסף לסכום</button>
     </div>
 
     <div class="card">
@@ -77,6 +77,16 @@
                 <div class="label">חלבון (ג')</div>
             </div>
         </div>
+
+        <div class="macro-calc">
+            <div class="macro-stat">יחס מאקרו (מהתפריט):<br>
+                <span id="macro-ratios" class="macro-val">0% / 0% / 0%</span>
+                <small>(חלבון/פחמ'/שומן)</small>
+            </div>
+            <div class="macro-stat">סיבים תזונתיים:<br>
+                <span id="total-fiber" class="macro-val">0 ג'</span>
+            </div>
+        </div>
         
         <h3 style="margin-top:25px; font-size:1.1em; border-bottom: 2px solid #eee; padding-bottom: 5px;">פירוט ארוחות:</h3>
         <div id="log-container"></div>
@@ -87,23 +97,22 @@
 
 <script>
     const menuItems = [
-        { name: "גבינה צהובה 9% עמק לייט", unit: "פרוסה", cal: 50, pro: 7.5 },
-        { name: "מלפפון עגבניה גזר פלפל אדום", unit: "סלט", cal: 100, pro: 0 },
-        { name: "טחינה מלאה אחווה", unit: "כפית", cal: 127, pro: 4.5 },
-        { name: "בשר או דג", unit: "100 גרם", cal: 200, pro: 22 },
-        { name: "בטטה", unit: "100 גרם", cal: 100, pro: 3 },
-        { name: "ביצים", unit: "ביצה", cal: 80, pro: 6 },
-        { name: "שעועית ירוקה", unit: "100 גרם", cal: 30, pro: 2 },
-        { name: "פירות יער קפואים", unit: "100 גרם", cal: 50, pro: 0 },
-        { name: "לחם פרו אנג׳ל", unit: "פרוסה", cal: 70, pro: 7 },
-        { name: "תפוח עץ", unit: "יחידה", cal: 100, pro: 0 },
-        { name: "ציפס חלבון", unit: "שקית", cal: 140, pro: 20 },
-        { name: "ציזבורגר מקדונלדס", unit: "יחידה", cal: 379, pro: 27 },
-        { name: "ציפס מקדונלדס", unit: "מנה", cal: 294, pro: 0 }
+        { name: "גבינה צהובה 9% עמק לייט", unit: "פרוסה", cal: 50, pro: 7.5, fat: 3, carb: 0, fib: 0 },
+        { name: "סלט ירקות", unit: "סלט", cal: 100, pro: 0, fat: 1, carb: 26, fib: 8 },
+        { name: "טחינה מלאה אחווה", unit: "כפית", cal: 127, pro: 4.5, fat: 11.2, carb: 0.6, fib: 3 },
+        { name: "בשר או דג", unit: "100 גרם", cal: 200, pro: 22, fat: 4.3, carb: 0, fib: 0 },
+        { name: "בטטה", unit: "100 גרם", cal: 100, pro: 2, fat: 0.15, carb: 21, fib: 3 },
+        { name: "ביצים", unit: "ביצה", cal: 80, pro: 6, fat: 6, carb: 0.65, fib: 0 },
+        { name: "שעועית ירוקה", unit: "100 גרם", cal: 30, pro: 2, fat: 0, carb: 3, fib: 3 },
+        { name: "פירות יער קפואים", unit: "100 גרם", cal: 50, pro: 0, fat: 0, carb: 7.5, fib: 1.3 },
+        { name: "לחם פרו אנג׳ל", unit: "פרוסה", cal: 70, pro: 7, fat: 1, carb: 1, fib: 4.5 },
+        { name: "תפוח עץ", unit: "יחידה", cal: 90, pro: 0, fat: 0, carb: 26, fib: 4.5 },
+        { name: "ציזבורגר מקדונלדס", unit: "יחידה", cal: 379, pro: 27, fat: 16.2, carb: 30, fib: 0 },
+        { name: "ציפס מקדונלדס", unit: "יחידה", cal: 294, pro: 5, fat: 15.2, carb: 34, fib: 0 },
+        { name: "ציפס חלבון", unit: "יחידה", cal: 140, pro: 20, fat: 4.5, carb: 5, fib: 1 }
     ];
 
-    // טעינת הנתונים מהזיכרון
-    let state = JSON.parse(localStorage.getItem('macroStateV2')) || { entries: [] };
+    let state = JSON.parse(localStorage.getItem('macroStateV3')) || { entries: [] };
 
     const selectElem = document.getElementById('food-select');
     const unitTag = document.getElementById('unit-tag');
@@ -134,7 +143,7 @@
         if (idx === "") return;
 
         const item = menuItems[idx];
-        addEntry(item.name, item.cal * qty, item.pro * qty, qty);
+        addEntry(item.name, item.cal * qty, item.pro * qty, qty, true, item.fat * qty, item.carb * qty, item.fib * qty);
         
         qtyElem.value = "";
         selectElem.value = "";
@@ -142,25 +151,22 @@
     }
 
     function addManual() {
-        const name = document.getElementById('manual-name').value || "מאכל כללי";
+        const name = document.getElementById('manual-name').value || "מאכל זר";
         const cal = parseFloat(document.getElementById('manual-cal').value) || 0;
         const pro = parseFloat(document.getElementById('manual-pro').value) || 0;
-        const qty = parseFloat(document.getElementById('manual-qty').value) || 1;
 
-        addEntry(name, cal * qty, pro * qty, qty);
+        // הוספה ללא נתוני שומן/פחמימה/סיבים כי זה "מאכל זר"
+        addEntry(name, cal, pro, 1, false, 0, 0, 0);
 
         document.getElementById('manual-name').value = "";
         document.getElementById('manual-cal').value = "";
         document.getElementById('manual-pro').value = "";
     }
 
-    function addEntry(name, totalCal, totalPro, qty) {
+    function addEntry(name, cal, pro, qty, isFromMenu, fat, carb, fib) {
         state.entries.push({
             id: Date.now(),
-            name: name,
-            cal: totalCal,
-            pro: totalPro,
-            qty: qty
+            name, cal, pro, qty, isFromMenu, fat, carb, fib
         });
         saveAndRender();
     }
@@ -171,36 +177,54 @@
     }
 
     function saveAndRender() {
-        localStorage.setItem('macroStateV2', JSON.stringify(state));
+        localStorage.setItem('macroStateV3', JSON.stringify(state));
         render();
     }
 
     function render() {
-        let totalCals = 0;
-        let totalPro = 0;
+        let totalCals = 0, totalPro = 0, totalFat = 0, totalCarb = 0, totalFib = 0, menuPro = 0;
         logContainer.innerHTML = "";
 
-        // מיון הרשימה מהחדש לישן
         const reversedEntries = [...state.entries].reverse();
 
         reversedEntries.forEach(entry => {
             totalCals += entry.cal;
             totalPro += entry.pro;
+            
+            if(entry.isFromMenu) {
+                menuPro += entry.pro;
+                totalFat += entry.fat;
+                totalCarb += entry.carb;
+                totalFib += entry.fib;
+            }
 
             const div = document.createElement('div');
             div.className = 'log-item';
             div.innerHTML = `
                 <div class="log-details">
-                    <span class="log-name">${entry.name} (x${entry.qty})</span>
-                    <small>${Math.round(entry.cal)} קלוריות | ${entry.pro.toFixed(1)} חלבון</small>
+                    <span class="log-name">${entry.name} ${entry.isFromMenu ? '(x'+entry.qty+')' : ''}</span>
+                    <small>${Math.round(entry.cal)} קל' | ${entry.pro.toFixed(1)} חלבון</small>
                 </div>
                 <div class="delete-btn" onclick="deleteEntry(${entry.id})">מחק</div>
             `;
             logContainer.appendChild(div);
         });
 
+        // עדכון תצוגה ראשית
         document.getElementById('total-cals').textContent = Math.round(totalCals);
         document.getElementById('total-protein').textContent = totalPro.toFixed(1);
+        document.getElementById('total-fiber').textContent = totalFib.toFixed(1) + " ג'";
+
+        // חישוב אחוזים (חלבון / פחמימה / שומן)
+        const totalMass = menuPro + totalCarb + totalFat;
+        if (totalMass > 0) {
+            const pPct = Math.round((menuPro / totalMass) * 100);
+            const cPct = Math.round((totalCarb / totalMass) * 100);
+            const fPct = Math.round((totalFat / totalMass) * 100);
+            document.getElementById('macro-ratios').textContent = `${pPct}% / ${cPct}% / ${fPct}%`;
+        } else {
+            document.getElementById('macro-ratios').textContent = "0% / 0% / 0%";
+        }
     }
 
     function resetDay() {
