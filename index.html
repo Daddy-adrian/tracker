@@ -44,8 +44,8 @@
             <option value="" disabled selected>-- בחר פריט מהרשימה --</option>
         </select>
         <span id="unit-tag" class="unit-display" style="display:none;"></span>
-        <label>כמות</label>
-        <input type="number" id="quantity" placeholder="1" min="1" inputmode="numeric">
+        <label>כמות (ניתן להזין עשרוני, π.ש 1.5)</label>
+        <input type="number" id="quantity" placeholder="1.0" min="0.1" step="0.1" inputmode="decimal">
         <button class="add-btn" onclick="addItem()">הוסף מהרשימה</button>
     </div>
 
@@ -79,9 +79,9 @@
         </div>
 
         <div class="macro-calc">
-            <div class="macro-stat">יחס מאקרו (מהתפריט):<br>
+            <div class="macro-stat">התפלגות מאקרו:<br>
                 <span id="macro-ratios" class="macro-val">0% / 0% / 0%</span>
-                <small>(חלבון/פחמ'/שומן)</small>
+                <small>(חלבון / פחמ' / שומן)</small>
             </div>
             <div class="macro-stat">סיבים תזונתיים:<br>
                 <span id="total-fiber" class="macro-val">0 ג'</span>
@@ -98,7 +98,7 @@
 <script>
     const menuItems = [
         { name: "גבינה צהובה 9% עמק לייט", unit: "פרוסה", cal: 50, pro: 7.5, fat: 3, carb: 0, fib: 0 },
-        { name: "סלט ירקות", unit: "סלט", cal: 100, pro: 0, fat: 1, carb: 26, fib: 8 },
+        { name: "מלפפון עגבניה גזר פלפל אדום", unit: "סלט", cal: 100, pro: 0, fat: 1, carb: 26, fib: 8 },
         { name: "טחינה מלאה אחווה", unit: "כפית", cal: 127, pro: 4.5, fat: 11.2, carb: 0.6, fib: 3 },
         { name: "בשר או דג", unit: "100 גרם", cal: 200, pro: 22, fat: 4.3, carb: 0, fib: 0 },
         { name: "בטטה", unit: "100 גרם", cal: 100, pro: 2, fat: 0.15, carb: 21, fib: 3 },
@@ -112,7 +112,7 @@
         { name: "ציפס חלבון", unit: "יחידה", cal: 140, pro: 20, fat: 4.5, carb: 5, fib: 1 }
     ];
 
-    let state = JSON.parse(localStorage.getItem('macroStateV3')) || { entries: [] };
+    let state = JSON.parse(localStorage.getItem('macroStateV4')) || { entries: [] };
 
     const selectElem = document.getElementById('food-select');
     const unitTag = document.getElementById('unit-tag');
@@ -139,8 +139,11 @@
 
     function addItem() {
         const idx = selectElem.value;
-        const qty = parseFloat(qtyElem.value) || 1;
-        if (idx === "") return;
+        const qty = parseFloat(qtyElem.value);
+        if (idx === "" || isNaN(qty) || qty <= 0) {
+            alert("אנא הזן כמות תקינה (מספר)");
+            return;
+        }
 
         const item = menuItems[idx];
         addEntry(item.name, item.cal * qty, item.pro * qty, qty, true, item.fat * qty, item.carb * qty, item.fib * qty);
@@ -155,7 +158,6 @@
         const cal = parseFloat(document.getElementById('manual-cal').value) || 0;
         const pro = parseFloat(document.getElementById('manual-pro').value) || 0;
 
-        // הוספה ללא נתוני שומן/פחמימה/סיבים כי זה "מאכל זר"
         addEntry(name, cal, pro, 1, false, 0, 0, 0);
 
         document.getElementById('manual-name').value = "";
@@ -177,7 +179,7 @@
     }
 
     function saveAndRender() {
-        localStorage.setItem('macroStateV3', JSON.stringify(state));
+        localStorage.setItem('macroStateV4', JSON.stringify(state));
         render();
     }
 
@@ -210,12 +212,10 @@
             logContainer.appendChild(div);
         });
 
-        // עדכון תצוגה ראשית
         document.getElementById('total-cals').textContent = Math.round(totalCals);
         document.getElementById('total-protein').textContent = totalPro.toFixed(1);
         document.getElementById('total-fiber').textContent = totalFib.toFixed(1) + " ג'";
 
-        // חישוב אחוזים (חלבון / פחמימה / שומן)
         const totalMass = menuPro + totalCarb + totalFat;
         if (totalMass > 0) {
             const pPct = Math.round((menuPro / totalMass) * 100);
