@@ -10,10 +10,10 @@
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
         h2 { text-align: center; color: #333; margin-top: 0; font-size: 1.2em; }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; font-size: 0.9em; }
-        select, input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; -webkit-appearance: none; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; -webkit-appearance: none; }
         
         .manual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .unit-display { font-style: italic; color: #666; margin-bottom: 10px; display: block; font-size: 0.9em; }
+        .unit-display { font-style: italic; color: #666; margin-bottom: 10px; display: block; font-size: 0.9em; min-height: 1.2em; }
         
         button { border: none; border-radius: 6px; padding: 12px; cursor: pointer; font-size: 1em; font-weight: bold; width: 100%; transition: opacity 0.2s; }
         .add-btn { background: #4caf50; color: white; }
@@ -40,11 +40,13 @@
 <div class="container">
     <div class="card">
         <h2>בחירה מהתפריט</h2>
-        <select id="food-select" onchange="updateUnit()">
-            <option value="" disabled selected>-- בחר פריט מהרשימה --</option>
-        </select>
-        <span id="unit-tag" class="unit-display" style="display:none;"></span>
-        <label>כמות (ניתן להזין עשרוני, π.ש 1.5)</label>
+        <label>חפש מאכל (לדוגמה: לחם)</label>
+        <input list="menu-options" id="food-search" placeholder="הקלד שם מאכל..." oninput="onSearchInput()">
+        <datalist id="menu-options"></datalist>
+        
+        <span id="unit-tag" class="unit-display"></span>
+        
+        <label>כמות (עשרוני מותר)</label>
         <input type="number" id="quantity" placeholder="1.0" min="0.1" step="0.1" inputmode="decimal">
         <button class="add-btn" onclick="addItem()">הוסף מהרשימה</button>
     </div>
@@ -81,7 +83,7 @@
         <div class="macro-calc">
             <div class="macro-stat">התפלגות מאקרו:<br>
                 <span id="macro-ratios" class="macro-val">0% / 0% / 0%</span>
-                <small>(חלבון / פחמ' / שומן)</small>
+                <small>(ח / פ / ש)</small>
             </div>
             <div class="macro-stat">סיבים תזונתיים:<br>
                 <span id="total-fiber" class="macro-val">0 ג'</span>
@@ -114,43 +116,52 @@
 
     let state = JSON.parse(localStorage.getItem('macroStateV4')) || { entries: [] };
 
-    const selectElem = document.getElementById('food-select');
+    const searchInput = document.getElementById('food-search');
+    const dataList = document.getElementById('menu-options');
     const unitTag = document.getElementById('unit-tag');
     const qtyElem = document.getElementById('quantity');
     const logContainer = document.getElementById('log-container');
 
-    function populateDropdown() {
-        menuItems.forEach((item, index) => {
+    function populateDatalist() {
+        dataList.innerHTML = "";
+        menuItems.forEach(item => {
             const option = document.createElement('option');
-            option.value = index;
-            option.textContent = item.name;
-            selectElem.appendChild(option);
+            option.value = item.name;
+            dataList.appendChild(option);
         });
         render();
     }
 
-    function updateUnit() {
-        const item = menuItems[selectElem.value];
+    function onSearchInput() {
+        const val = searchInput.value;
+        const item = menuItems.find(i => i.name === val);
         if (item) {
             unitTag.textContent = "יחידת מידה: " + item.unit;
-            unitTag.style.display = 'block';
+            qtyElem.focus(); // העברת פוקוס לכמות אוטומטית כשבוחרים מאכל
+        } else {
+            unitTag.textContent = "";
         }
     }
 
     function addItem() {
-        const idx = selectElem.value;
+        const val = searchInput.value;
+        const item = menuItems.find(i => i.name === val);
         const qty = parseFloat(qtyElem.value);
-        if (idx === "" || isNaN(qty) || qty <= 0) {
-            alert("אנא הזן כמות תקינה (מספר)");
+
+        if (!item) {
+            alert("יש לבחור מאכל קיים מהרשימה");
+            return;
+        }
+        if (isNaN(qty) || qty <= 0) {
+            alert("אנא הזן כמות תקינה");
             return;
         }
 
-        const item = menuItems[idx];
         addEntry(item.name, item.cal * qty, item.pro * qty, qty, true, item.fat * qty, item.carb * qty, item.fib * qty);
         
+        searchInput.value = "";
         qtyElem.value = "";
-        selectElem.value = "";
-        unitTag.style.display = 'none';
+        unitTag.textContent = "";
     }
 
     function addManual() {
@@ -234,7 +245,7 @@
         }
     }
 
-    populateDropdown();
+    populateDatalist();
 </script>
 
 </body>
