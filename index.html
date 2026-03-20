@@ -71,7 +71,6 @@
 </div>
 
 <script>
-    // --- הנתונים שלך ---
     const menuItems = [
         { name: "גבינה צהובה 9 אחוז עמק לייט", unit: "פרוסה", cal: 50, pro: 7.5 },
         { name: "מלפפון עגבניה גזר פלפל אדום", unit: "סלט", cal: 100, pro: 0 },
@@ -84,8 +83,9 @@
         { name: "לחם פרו אנג׳ל", unit: "פרוסה", cal: 70, pro: 7 }
     ];
 
-    // --- State/Variables ---
-    let dailyTotals = { cals: 0, pro: 0 };
+    // Load data from localStorage on startup
+    let dailyTotals = JSON.parse(localStorage.getItem('dailyMacros')) || { cals: 0, pro: 0 };
+
     const selectElem = document.getElementById('food-select');
     const unitContainer = document.getElementById('unit-container');
     const unitElem = document.getElementById('item-unit');
@@ -93,7 +93,6 @@
     const totalCalsElem = document.getElementById('total-cals');
     const totalProElem = document.getElementById('total-protein');
 
-    // --- Initialization: Populate Dropdown ---
     function populateDropdown() {
         menuItems.forEach((item, index) => {
             const option = document.createElement('option');
@@ -101,9 +100,9 @@
             option.textContent = item.name;
             selectElem.appendChild(option);
         });
+        updateDisplay(); // Show saved data immediately
     }
 
-    // --- Interaction: Update Unit Display ---
     function updateUnit() {
         const selectedIndex = selectElem.value;
         if (selectedIndex !== "") {
@@ -116,7 +115,6 @@
         }
     }
 
-    // --- Interaction: Add Item Logic ---
     function addItem() {
         const selectedIndex = selectElem.value;
         const qty = parseInt(qtyElem.value);
@@ -128,37 +126,36 @@
 
         const item = menuItems[selectedIndex];
 
-        // Calculation: (item values per unit) * quantity
         dailyTotals.cals += item.cal * qty;
         dailyTotals.pro += item.pro * qty;
+
+        // Save to localStorage
+        localStorage.setItem('dailyMacros', JSON.stringify(dailyTotals));
 
         updateDisplay();
         clearEntryForm();
     }
 
-    // --- Update UI ---
     function updateDisplay() {
         totalCalsElem.textContent = Math.round(dailyTotals.cals);
-        totalProElem.textContent = Math.round(dailyTotals.pro);
+        totalProElem.textContent = dailyTotals.pro % 1 === 0 ? dailyTotals.pro : dailyTotals.pro.toFixed(1);
     }
 
-    // --- Clear Entry Form ---
     function clearEntryForm() {
         selectElem.value = "";
         qtyElem.value = "";
         unitContainer.style.display = 'none';
     }
 
-    // --- Reset ---
     function resetDay() {
         if (confirm("האם אתה בטוח שברצונך לאפס את הנתונים היומיים?")) {
             dailyTotals = { cals: 0, pro: 0 };
+            localStorage.removeItem('dailyMacros');
             updateDisplay();
             clearEntryForm();
         }
     }
 
-    // Run on startup
     populateDropdown();
 </script>
 
