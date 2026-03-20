@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>מחשבון מאקרו יומי</title>
+    <title>מחשבון מאקרו וצעדים</title>
     <style>
         body { font-family: -apple-system, sans-serif; padding: 15px; background: #fafafa; margin-bottom: 50px; }
         .container { max-width: 450px; margin: auto; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
         h2 { text-align: center; color: #333; margin-top: 0; font-size: 1.2em; }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; font-size: 0.9em; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; -webkit-appearance: none; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; }
         
         .manual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .unit-display { font-style: italic; color: #666; margin-bottom: 10px; display: block; font-size: 0.9em; min-height: 1.2em; }
@@ -22,11 +22,12 @@
 
         .totals { display: flex; justify-content: space-around; text-align: center; margin-top: 10px; padding-top: 15px; border-top: 2px solid #eaeaea; }
         .total-box .value { font-size: 1.8em; font-weight: bold; color: #333; }
-        .total-box .label { font-size: 0.9em; color: #777; }
+        .total-box .label { font-size: 0.8em; color: #777; }
 
-        .macro-calc { background: #f0f7ff; padding: 15px; border-radius: 8px; margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; border: 1px solid #d1e3f8; }
-        .macro-stat { font-size: 0.85em; color: #444; }
+        .macro-calc { background: #f0f7ff; padding: 15px; border-radius: 12px; margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; border: 1px solid #d1e3f8; }
+        .steps-card { background: #e8f5e9; border: 1px solid #c8e6c9; }
         .macro-val { font-weight: bold; color: #2196F3; display: block; font-size: 1.1em; }
+        .steps-val { color: #2e7d32 !important; }
 
         .log-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
         .log-item:last-child { border-bottom: none; }
@@ -38,15 +39,25 @@
 <body>
 
 <div class="container">
+    <div class="card steps-card">
+        <div class="totals" style="border:none; padding:0; margin:0;">
+            <div class="total-box">
+                <div class="value steps-val" id="step-count">0</div>
+                <div class="label">צעדים היום</div>
+            </div>
+            <div class="total-box">
+                <div class="value steps-val" id="burned-cals">0</div>
+                <div class="label">קל' שנשרפו</div>
+            </div>
+        </div>
+    </div>
+
     <div class="card">
         <h2>בחירה מהתפריט</h2>
-        <label>חפש מאכל (לדוגמה: לחם)</label>
-        <input list="menu-options" id="food-search" placeholder="הקלד שם מאכל..." oninput="onSearchInput()">
+        <input list="menu-options" id="food-search" placeholder="חפש מאכל (למשל: לחם)" oninput="onSearchInput()">
         <datalist id="menu-options"></datalist>
-        
         <span id="unit-tag" class="unit-display"></span>
-        
-        <label>כמות (עשרוני מותר)</label>
+        <label>כמות</label>
         <input type="number" id="quantity" placeholder="1.0" min="0.1" step="0.1" inputmode="decimal">
         <button class="add-btn" onclick="addItem()">הוסף מהרשימה</button>
     </div>
@@ -55,14 +66,8 @@
         <h2>הוספה ידנית (מאכל זר)</h2>
         <input type="text" id="manual-name" placeholder="שם המאכל">
         <div class="manual-grid">
-            <div>
-                <label>קלוריות</label>
-                <input type="number" id="manual-cal" placeholder="0" inputmode="numeric">
-            </div>
-            <div>
-                <label>חלבון (ג')</label>
-                <input type="number" id="manual-pro" placeholder="0" inputmode="decimal">
-            </div>
+            <div><label>קלוריות</label><input type="number" id="manual-cal" placeholder="0" inputmode="numeric"></div>
+            <div><label>חלבון (ג')</label><input type="number" id="manual-pro" placeholder="0" inputmode="decimal"></div>
         </div>
         <button class="manual-btn" onclick="addManual()">הוסף לסכום</button>
     </div>
@@ -72,7 +77,7 @@
         <div class="totals">
             <div class="total-box">
                 <div class="value" id="total-cals">0</div>
-                <div class="label">קלוריות</div>
+                <div class="label">צריכת קלוריות</div>
             </div>
             <div class="total-box">
                 <div class="value" id="total-protein">0</div>
@@ -81,9 +86,8 @@
         </div>
 
         <div class="macro-calc">
-            <div class="macro-stat">התפלגות מאקרו:<br>
+            <div class="macro-stat">התפלגות (ח/פ/ש):<br>
                 <span id="macro-ratios" class="macro-val">0% / 0% / 0%</span>
-                <small>(ח / פ / ש)</small>
             </div>
             <div class="macro-stat">סיבים תזונתיים:<br>
                 <span id="total-fiber" class="macro-val">0 ג'</span>
@@ -92,12 +96,16 @@
         
         <h3 style="margin-top:25px; font-size:1.1em; border-bottom: 2px solid #eee; padding-bottom: 5px;">פירוט ארוחות:</h3>
         <div id="log-container"></div>
-
         <button class="reset-btn" onclick="resetDay()">איפוס כל הנתונים</button>
     </div>
 </div>
 
 <script>
+    // --- SETUP: Google Sheet CSV URL ---
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRNWOnvfzezcqKVq5Od4LFSjhHp4j0c73SgvKy1ZSWqIRZK5c01sXdMrT0pVt2aGiGWCtGenFlJDuIY/pub?output=csv"; 
+    const WEIGHT_KG = 78;
+    const CAL_PER_STEP = 0.04; 
+
     const menuItems = [
         { name: "גבינה צהובה 9% עמק לייט", unit: "פרוסה", cal: 50, pro: 7.5, fat: 3, carb: 0, fib: 0 },
         { name: "מלפפון עגבניה גזר פלפל אדום", unit: "סלט", cal: 100, pro: 0, fat: 1, carb: 26, fib: 8 },
@@ -114,73 +122,64 @@
         { name: "ציפס חלבון", unit: "יחידה", cal: 140, pro: 20, fat: 4.5, carb: 5, fib: 1 }
     ];
 
-    let state = JSON.parse(localStorage.getItem('macroStateV4')) || { entries: [] };
+    let state = JSON.parse(localStorage.getItem('macroStateV5')) || { entries: [] };
 
-    const searchInput = document.getElementById('food-search');
-    const dataList = document.getElementById('menu-options');
-    const unitTag = document.getElementById('unit-tag');
-    const qtyElem = document.getElementById('quantity');
-    const logContainer = document.getElementById('log-container');
+    async function fetchSteps() {
+        if (!CSV_URL.includes("https")) return;
+        try {
+            // Added Cache Buster (&t=) to ensure fresh data from Safari
+            const res = await fetch(CSV_URL + "&t=" + Date.now());
+            const text = await res.text();
+            // Assumes steps are in cell A2 (the second row of the first column)
+            const steps = parseInt(text.split('\n')[1]) || 0;
+            document.getElementById('step-count').textContent = steps.toLocaleString();
+            document.getElementById('burned-cals').textContent = Math.round(steps * CAL_PER_STEP);
+        } catch (e) { console.error("Steps fetch failed"); }
+    }
 
     function populateDatalist() {
-        dataList.innerHTML = "";
+        const dl = document.getElementById('menu-options');
         menuItems.forEach(item => {
-            const option = document.createElement('option');
-            option.value = item.name;
-            dataList.appendChild(option);
+            const opt = document.createElement('option');
+            opt.value = item.name;
+            dl.appendChild(opt);
         });
         render();
+        fetchSteps();
     }
 
     function onSearchInput() {
-        const val = searchInput.value;
-        const item = menuItems.find(i => i.name === val);
+        const item = menuItems.find(i => i.name === document.getElementById('food-search').value);
         if (item) {
-            unitTag.textContent = "יחידת מידה: " + item.unit;
-            qtyElem.focus(); // העברת פוקוס לכמות אוטומטית כשבוחרים מאכל
-        } else {
-            unitTag.textContent = "";
+            document.getElementById('unit-tag').textContent = "יחידת מידה: " + item.unit;
+            document.getElementById('quantity').focus();
         }
     }
 
     function addItem() {
-        const val = searchInput.value;
+        const val = document.getElementById('food-search').value;
         const item = menuItems.find(i => i.name === val);
-        const qty = parseFloat(qtyElem.value);
-
-        if (!item) {
-            alert("יש לבחור מאכל קיים מהרשימה");
-            return;
-        }
-        if (isNaN(qty) || qty <= 0) {
-            alert("אנא הזן כמות תקינה");
-            return;
-        }
+        const qty = parseFloat(document.getElementById('quantity').value);
+        if (!item || isNaN(qty)) return;
 
         addEntry(item.name, item.cal * qty, item.pro * qty, qty, true, item.fat * qty, item.carb * qty, item.fib * qty);
-        
-        searchInput.value = "";
-        qtyElem.value = "";
-        unitTag.textContent = "";
+        document.getElementById('food-search').value = "";
+        document.getElementById('quantity').value = "";
+        document.getElementById('unit-tag').textContent = "";
     }
 
     function addManual() {
-        const name = document.getElementById('manual-name').value || "מאכל זר";
-        const cal = parseFloat(document.getElementById('manual-cal').value) || 0;
-        const pro = parseFloat(document.getElementById('manual-pro').value) || 0;
-
-        addEntry(name, cal, pro, 1, false, 0, 0, 0);
-
+        const n = document.getElementById('manual-name').value || "זר";
+        const c = parseFloat(document.getElementById('manual-cal').value) || 0;
+        const p = parseFloat(document.getElementById('manual-pro').value) || 0;
+        addEntry(n, c, p, 1, false, 0, 0, 0);
         document.getElementById('manual-name').value = "";
         document.getElementById('manual-cal').value = "";
         document.getElementById('manual-pro').value = "";
     }
 
     function addEntry(name, cal, pro, qty, isFromMenu, fat, carb, fib) {
-        state.entries.push({
-            id: Date.now(),
-            name, cal, pro, qty, isFromMenu, fat, carb, fib
-        });
+        state.entries.push({ id: Date.now(), name, cal, pro, qty, isFromMenu, fat, carb, fib });
         saveAndRender();
     }
 
@@ -190,63 +189,33 @@
     }
 
     function saveAndRender() {
-        localStorage.setItem('macroStateV4', JSON.stringify(state));
+        localStorage.setItem('macroStateV5', JSON.stringify(state));
         render();
     }
 
     function render() {
-        let totalCals = 0, totalPro = 0, totalFat = 0, totalCarb = 0, totalFib = 0, menuPro = 0;
-        logContainer.innerHTML = "";
+        let tc = 0, tp = 0, tf = 0, tcrb = 0, tfib = 0, mPro = 0;
+        const log = document.getElementById('log-container');
+        log.innerHTML = "";
 
-        const reversedEntries = [...state.entries].reverse();
-
-        reversedEntries.forEach(entry => {
-            totalCals += entry.cal;
-            totalPro += entry.pro;
-            
-            if(entry.isFromMenu) {
-                menuPro += entry.pro;
-                totalFat += entry.fat;
-                totalCarb += entry.carb;
-                totalFib += entry.fib;
-            }
-
-            const div = document.createElement('div');
-            div.className = 'log-item';
-            div.innerHTML = `
-                <div class="log-details">
-                    <span class="log-name">${entry.name} ${entry.isFromMenu ? '(x'+entry.qty+')' : ''}</span>
-                    <small>${Math.round(entry.cal)} קל' | ${entry.pro.toFixed(1)} חלבון</small>
-                </div>
-                <div class="delete-btn" onclick="deleteEntry(${entry.id})">מחק</div>
-            `;
-            logContainer.appendChild(div);
+        [...state.entries].reverse().forEach(e => {
+            tc += e.cal; tp += e.pro;
+            if(e.isFromMenu) { mPro += e.pro; tf += e.fat; tcrb += e.carb; tfib += e.fib; }
+            const d = document.createElement('div');
+            d.className = 'log-item';
+            d.innerHTML = `<div class="log-details"><span class="log-name">${e.name}</span><small>${Math.round(e.cal)} קל' | ${e.pro.toFixed(1)} חלבון</small></div><div class="delete-btn" onclick="deleteEntry(${e.id})">מחק</div>`;
+            log.appendChild(d);
         });
 
-        document.getElementById('total-cals').textContent = Math.round(totalCals);
-        document.getElementById('total-protein').textContent = totalPro.toFixed(1);
-        document.getElementById('total-fiber').textContent = totalFib.toFixed(1) + " ג'";
-
-        const totalMass = menuPro + totalCarb + totalFat;
-        if (totalMass > 0) {
-            const pPct = Math.round((menuPro / totalMass) * 100);
-            const cPct = Math.round((totalCarb / totalMass) * 100);
-            const fPct = Math.round((totalFat / totalMass) * 100);
-            document.getElementById('macro-ratios').textContent = `${pPct}% / ${cPct}% / ${fPct}%`;
-        } else {
-            document.getElementById('macro-ratios').textContent = "0% / 0% / 0%";
-        }
+        document.getElementById('total-cals').textContent = Math.round(tc);
+        document.getElementById('total-protein').textContent = tp.toFixed(1);
+        document.getElementById('total-fiber').textContent = tfib.toFixed(1) + " ג'";
+        const tm = mPro + tcrb + tf;
+        document.getElementById('macro-ratios').textContent = tm > 0 ? `${Math.round(mPro/tm*100)}% / ${Math.round(tcrb/tm*100)}% / ${Math.round(tf/tm*100)}%` : "0% / 0% / 0%";
     }
 
-    function resetDay() {
-        if (confirm("לאפס את כל הרשימה והסכומים להיום?")) {
-            state.entries = [];
-            saveAndRender();
-        }
-    }
-
+    function resetDay() { if(confirm("לאפס?")) { state.entries = []; saveAndRender(); } }
     populateDatalist();
 </script>
-
 </body>
 </html>
