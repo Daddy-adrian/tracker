@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>מחשבון מאקרו ומאזן נטו</title>
+    <title>מעקב תזונה ושריפת אנרגיה</title>
     <style>
         body { font-family: -apple-system, sans-serif; padding: 15px; background: #fafafa; margin-bottom: 50px; }
         .container { max-width: 450px; margin: auto; }
@@ -18,12 +18,11 @@
         .workout-btn { background: #ff9800; color: white; margin-bottom: 15px; }
         .reset-btn { background: #f44336; color: white; font-size: 0.9em; margin-top: 25px;}
 
-        /* Layout Stats Side-by-Side */
         .main-stats { display: flex; justify-content: space-around; text-align: center; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 2px solid #eee; }
         .stat-box { flex: 1; }
         .stat-box .value { font-size: 1.8em; font-weight: bold; color: #333; }
         .stat-box .label { font-size: 0.85em; color: #777; font-weight: bold; }
-        .net-value { color: #2e7d32; }
+        .burn-value { color: #e65100; } /* צבע כתום לשריפה */
 
         .macro-calc { background: #f0f7ff; padding: 12px; border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; border: 1px solid #d1e3f8; margin-top: 15px; }
         .macro-val { font-weight: bold; color: #2196F3; display: block; font-size: 1em; }
@@ -31,7 +30,6 @@
         .log-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
         .log-details { font-size: 1.1em; }
         .log-name { font-weight: bold; display: block; margin-bottom: 2px; }
-        /* Larger macros font */
         .log-macros { color: #444; font-size: 0.95em; font-weight: 500; } 
         .delete-btn { color: #f44336; font-weight: bold; padding: 8px 12px; cursor: pointer; border: 1px solid #f44336; border-radius: 6px; font-size: 0.85em; }
         
@@ -44,7 +42,11 @@
 <div class="container">
     <div class="card">
         <button class="workout-btn" id="workout-toggle" onclick="toggleWorkout()">סמנ/י אימון (+250 קל')</button>
-        
+        <label>כמות צעדים (הזנה ידנית)</label>
+        <input type="number" id="steps-input" placeholder="כמה צעדת היום?" oninput="updateSteps()" inputmode="numeric">
+    </div>
+
+    <div class="card">
         <h2>בחירה מהתפריט</h2>
         <input list="menu-options" id="food-search" placeholder="חפש מאכל..." oninput="onSearchInput()">
         <datalist id="menu-options"></datalist>
@@ -70,8 +72,8 @@
                 <div class="label">אכלתי (קל')</div>
             </div>
             <div class="stat-box">
-                <div class="value net-value" id="net-balance">0</div>
-                <div class="label">מאזן נטו</div>
+                <div class="value burn-value" id="burned-total">200</div>
+                <div class="label">נשרף (סה"כ)</div>
             </div>
         </div>
 
@@ -96,7 +98,6 @@
 </div>
 
 <script>
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRNWOnvfzezcqKVq5Od4LFSjhHp4j0c73SgvKy1ZSWqIRZK5c01sXdMrT0pVt2aGiGWCtGenFlJDuIY/pub?output=csv"; 
     const CAL_PER_STEP = 0.04; 
     const BASE_BURN = 200;
 
@@ -116,19 +117,15 @@
         { name: "ציפס חלבון", unit: "יחידה", cal: 140, pro: 20, fat: 4.5, carb: 5, fib: 1 }
     ];
 
-    let state = JSON.parse(localStorage.getItem('macroStateV6')) || { entries: [], workoutDone: false, lastSteps: 0 };
-
-    async function fetchSteps() {
-        try {
-            const res = await fetch(CSV_URL + "&t=" + Date.now());
-            const text = await res.text();
-            state.lastSteps = parseInt(text.split('\n')[1]) || 0;
-            saveAndRender();
-        } catch (e) { console.error("Steps fetch failed"); }
-    }
+    let state = JSON.parse(localStorage.getItem('macroStateV7')) || { entries: [], workoutDone: false, manualSteps: 0 };
 
     function toggleWorkout() {
         state.workoutDone = !state.workoutDone;
+        saveAndRender();
+    }
+
+    function updateSteps() {
+        state.manualSteps = parseInt(document.getElementById('steps-input').value) || 0;
         saveAndRender();
     }
 
@@ -168,7 +165,7 @@
     }
 
     function saveAndRender() {
-        localStorage.setItem('macroStateV6', JSON.stringify(state));
+        localStorage.setItem('macroStateV7', JSON.stringify(state));
         
         let foodCals = 0, foodPro = 0, tfat = 0, tcarb = 0, tfib = 0, mPro = 0;
         const log = document.getElementById('log-container');
@@ -182,20 +179,21 @@
             d.innerHTML = `
                 <div class="log-details">
                     <span class="log-name">${e.name} ${e.isFromMenu ? '(x'+e.qty+')' : ''}</span>
-                    <span class="log-macros">${Math.round(e.cal)} קלוריות | ${e.pro.toFixed(1)} חלבון</span>
+                    <span class="log-macros">${Math.round(e.cal)} קל' | ${e.pro.toFixed(1)} חלבון</span>
                 </div>
                 <div onclick="deleteEntry(${e.id})" class="delete-btn">מחק</div>
             `;
             log.appendChild(d);
         });
 
-        const stepBurn = Math.round(state.lastSteps * CAL_PER_STEP);
+        const stepBurn = Math.round(state.manualSteps * CAL_PER_STEP);
         const workoutBurn = state.workoutDone ? 250 : 0;
         const totalBurned = BASE_BURN + stepBurn + workoutBurn;
 
+        document.getElementById('steps-input').value = state.manualSteps || "";
+        document.getElementById('burned-total').textContent = totalBurned;
         document.getElementById('total-cals').textContent = Math.round(foodCals);
         document.getElementById('total-protein').textContent = foodPro.toFixed(1);
-        document.getElementById('net-balance').textContent = Math.round(foodCals - totalBurned);
         document.getElementById('total-fiber').textContent = tfib.toFixed(1) + " ג'";
         
         const btn = document.getElementById('workout-toggle');
@@ -206,11 +204,15 @@
         document.getElementById('macro-ratios').textContent = tm > 0 ? `${Math.round(mPro/tm*100)}% / ${Math.round(tcarb/tm*100)}% / ${Math.round(tfat/tm*100)}%` : "0% / 0% / 0%";
     }
 
-    function resetDay() { if(confirm("לאפס יום?")) { state = { entries: [], workoutDone: false, lastSteps: 0 }; saveAndRender(); } }
+    function resetDay() { 
+        if(confirm("לאפס את כל הנתונים להיום?")) { 
+            state = { entries: [], workoutDone: false, manualSteps: 0 }; 
+            saveAndRender(); 
+        } 
+    }
     
     const dl = document.getElementById('menu-options');
     menuItems.forEach(i => { const o = document.createElement('option'); o.value = i.name; dl.appendChild(o); });
-    fetchSteps();
     saveAndRender();
 </script>
 </body>
